@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analisis Sentimen MBG — Dashboard Penelitian</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0f0f0f;
+  --ink2:#3a3a3a;
+  --ink3:#6b6b6b;
+  --paper:#f5f2ed;
+  --paper2:#eceae4;
+  --paper3:#e3e0d8;
+  --rule:#c8c4ba;
+  --pos:#1a6b3a;
+  --pos-bg:#e8f4ee;
+  --neg:#8b1a1a;
+  --neg-bg:#f7eaea;
+  --neu:#3a4a6b;
+  --neu-bg:#eaecf4;
+  --gpt:#1a3f6b;
+  --gpt-bg:#e8eef7;
+  --cla:#6b3a1a;
+  --cla-bg:#f7f0e8;
+  --warn:#7a4a00;
+  --warn-bg:#fdf3e0;
+  --serif:'Libre Baskerville',Georgia,serif;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.6;
+}
+
+/* ── MASTHEAD ── */
+.masthead{
+  border-bottom:2px solid var(--ink);
+  padding:0 48px;
+}
+.masthead-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:20px 0 14px;
+  border-bottom:0.5px solid var(--rule);
+  gap:24px;
+}
+.kicker{
+  font-family:var(--mono);
+  font-size:10px;
+  font-weight:500;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:var(--ink3);
+  margin-bottom:6px;
+}
+.masthead-title{
+  font-family:var(--serif);
+  font-size:26px;
+  font-weight:700;
+  line-height:1.2;
+  letter-spacing:-0.3px;
+}
+.masthead-title em{
+  font-style:italic;
+  font-weight:400;
+}
+.masthead-meta{
+  text-align:right;
+  flex-shrink:0;
+}
+.masthead-meta p{
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--ink3);
+  line-height:1.8;
+}
+.masthead-sub{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:12px 0;
+  gap:32px;
+  flex-wrap:wrap;
+}
+.tag-row{display:flex;gap:8px;flex-wrap:wrap}
+.tag{
+  font-family:var(--mono);
+  font-size:10px;
+  font-weight:500;
+  letter-spacing:0.5px;
+  padding:3px 9px;
+  border:1px solid currentColor;
+  border-radius:2px;
+}
+.tag-gpt{color:var(--gpt);background:var(--gpt-bg)}
+.tag-cla{color:var(--cla);background:var(--cla-bg)}
+.tag-n{color:var(--ink3);border-color:var(--rule)}
+
+/* ── LAYOUT ── */
+.body{padding:40px 48px;display:flex;flex-direction:column;gap:52px}
+
+/* ── SECTION ── */
+.section-label{
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:var(--ink3);
+  border-top:1.5px solid var(--ink);
+  padding-top:8px;
+  margin-bottom:20px;
+}
+
+/* ── LEDE (top stats) ── */
+.lede-grid{
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr 1fr;
+  gap:0;
+  border:1px solid var(--rule);
+}
+.lede-cell{
+  padding:20px 24px;
+  border-right:0.5px solid var(--rule);
+}
+.lede-cell:last-child{border-right:none}
+.lede-label{
+  font-family:var(--mono);
+  font-size:10px;
+  color:var(--ink3);
+  letter-spacing:1px;
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+.lede-val{
+  font-family:var(--serif);
+  font-size:36px;
+  font-weight:700;
+  line-height:1;
+  margin-bottom:4px;
+}
+.lede-sub{font-size:12px;color:var(--ink3);line-height:1.4}
+.lede-cell.big .lede-val{font-size:22px;line-height:1.2;margin-bottom:8px}
+.lede-cell.big .lede-sub{font-size:13px;line-height:1.6}
+.lede-accent{color:var(--neg)}
+
+/* ── FINDING BOX ── */
+.finding{
+  background:var(--warn-bg);
+  border-left:3px solid var(--warn);
+  padding:16px 20px;
+  margin-top:16px;
+}
+.finding-label{
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  color:var(--warn);
+  margin-bottom:6px;
+}
+.finding p{font-size:13px;color:var(--ink2);line-height:1.65}
+.finding strong{font-weight:500;color:var(--ink)}
+
+/* ── GHOST NOTE ── */
+.ghost{
+  background:var(--paper2);
+  border:0.5px solid var(--rule);
+  border-radius:2px;
+  padding:14px 16px;
+  font-size:12.5px;
+  color:var(--ink3);
+  line-height:1.65;
+}
+.ghost strong{color:var(--ink2);font-weight:500}
+.ghost .hi{
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:500;
+  padding:1px 5px;
+  border-radius:2px;
+}
+.ghost .hi-pos{background:var(--pos-bg);color:var(--pos)}
+.ghost .hi-neg{background:var(--neg-bg);color:var(--neg)}
+.ghost .hi-neu{background:var(--neu-bg);color:var(--neu)}
+.ghost .hi-gpt{background:var(--gpt-bg);color:var(--gpt)}
+.ghost .hi-cla{background:var(--cla-bg);color:var(--cla)}
+.ghost .hi-warn{background:var(--warn-bg);color:var(--warn)}
+
+/* ── TWO-COL ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+
+/* ── CARD ── */
+.card{
+  background:var(--paper);
+  border:0.5px solid var(--rule);
+  padding:24px;
+}
+.card-title{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--ink3);
+  margin-bottom:16px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.dot{
+  width:8px;height:8px;
+  border-radius:50%;
+  display:inline-block;
+  flex-shrink:0;
+}
+
+/* ── CONFUSION MATRIX ── */
+.cm-wrap{display:flex;flex-direction:column;gap:3px}
+.cm-header-row{display:flex;gap:3px;margin-left:72px}
+.cm-col-label{
+  width:76px;
+  font-family:var(--mono);
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:.8px;
+  color:var(--ink3);
+  text-align:center;
+  line-height:1.3;
+}
+.cm-row{display:flex;align-items:center;gap:3px}
+.cm-row-label{
+  width:68px;
+  font-family:var(--mono);
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:.8px;
+  color:var(--ink3);
+  text-align:right;
+  padding-right:8px;
+  line-height:1.3;
+}
+.cm-cell{
+  width:76px;height:72px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  cursor:default;
+  transition:filter .15s;
+  border:1px solid transparent;
+}
+.cm-cell:hover{filter:brightness(.93);border-color:var(--ink)}
+.cm-cell .n{
+  font-family:var(--serif);
+  font-size:20px;
+  font-weight:700;
+  line-height:1;
+}
+.cm-cell .pct{
+  font-family:var(--mono);
+  font-size:9px;
+  margin-top:2px;
+  opacity:.75;
+}
+.cm-axis{
+  font-family:var(--mono);
+  font-size:9px;
+  color:var(--ink3);
+  letter-spacing:1px;
+  text-transform:uppercase;
+  margin-top:8px;
+  text-align:center;
+  margin-left:72px;
+}
+
+/* ── METRICS TABLE ── */
+.mt{width:100%;border-collapse:collapse}
+.mt th{
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.8px;
+  text-transform:uppercase;
+  color:var(--ink3);
+  padding:6px 12px;
+  text-align:left;
+  border-bottom:1px solid var(--rule);
+}
+.mt td{
+  padding:9px 12px;
+  font-size:13px;
+  border-bottom:0.5px solid var(--paper3);
+}
+.mt tr:last-child td{border-bottom:none}
+.mt .mono{font-family:var(--mono);font-weight:500;font-size:13px}
+
+/* ── PROGRESS BARS ── */
+.pb-group{display:flex;flex-direction:column;gap:8px}
+.pb-row{display:flex;align-items:center;gap:10px}
+.pb-lbl{
+  font-family:var(--mono);
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  width:56px;
+  flex-shrink:0;
+}
+.pb-track{
+  flex:1;
+  height:5px;
+  background:var(--paper3);
+  border-radius:0;
+}
+.pb-fill{height:100%;transition:width 1.2s cubic-bezier(.16,1,.3,1)}
+.pb-val{
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:500;
+  width:36px;
+  text-align:right;
+  flex-shrink:0;
+}
+
+/* ── WORD TOKENS ── */
+.wt-wrap{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  padding:12px 0 4px;
+}
+.wt{
+  font-family:var(--mono);
+  border:1px solid;
+  padding:3px 9px;
+  line-height:1.2;
+  cursor:default;
+  transition:transform .1s;
+  border-radius:1px;
+}
+.wt:hover{transform:translateY(-2px)}
+
+/* ── CHART WRAPPERS ── */
+.chart-wrap{position:relative;width:100%}
+
+/* ── LEGEND ── */
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px}
+.legend-item{
+  display:flex;align-items:center;
+  gap:6px;
+  font-family:var(--mono);
+  font-size:10px;
+  color:var(--ink3);
+}
+.legend-sq{
+  width:10px;height:10px;
+  border-radius:1px;
+  flex-shrink:0;
+}
+
+/* ── DIVIDER ── */
+.rule{height:0.5px;background:var(--rule);margin:4px 0}
+
+/* ── PULLQUOTE ── */
+.pullquote{
+  border-left:3px solid var(--ink);
+  padding:12px 20px;
+  margin:16px 0;
+}
+.pullquote p{
+  font-family:var(--serif);
+  font-size:17px;
+  font-style:italic;
+  line-height:1.55;
+  color:var(--ink2);
+}
+.pullquote cite{
+  display:block;
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--ink3);
+  margin-top:8px;
+  font-style:normal;
+}
+
+/* ── ANIMATE ── */
+@keyframes fadeSlide{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.ani{animation:fadeSlide .5s ease both}
+.ani-1{animation-delay:.05s}
+.ani-2{animation-delay:.1s}
+.ani-3{animation-delay:.15s}
+.ani-4{animation-delay:.2s}
+.ani-5{animation-delay:.25s}
+
+/* ── FOOTER ── */
+footer{
+  border-top:1px solid var(--ink);
+  padding:20px 48px;
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:8px;
+}
+footer p{font-family:var(--mono);font-size:10px;color:var(--ink3);letter-spacing:.5px}
+</style>
+</head>
+<body>
+
+<!-- MASTHEAD -->
+<header class="masthead">
+  <div class="masthead-top ani ani-1">
+    <div>
+      <p class="kicker">Tugas Akhir · Sistem Informasi · Universitas Ciputra Surabaya · 2026</p>
+      <h1 class="masthead-title">Analisis Sentimen <em>Program Makan Bergizi Gratis</em><br>di Twitter — Naive Bayes &amp; LLM Labeling</h1>
+    </div>
+    <div class="masthead-meta">
+      <p>
+        <span id="metaAuthor">Cevin Jonathan Liep</span><br>
+        <span id="metaNim">NIM 0706022210035</span><br>
+        <span id="metaPeriod">Feb 2024 – Des 2025</span><br>
+        n = <span id="metaCleanCount">2.000</span> tweets
+      </p>
+    </div>
+  </div>
+  <div class="masthead-sub ani ani-2">
+    <div class="tag-row">
+      <span class="tag tag-gpt">Model A · <span id="modelGptTag">openai/gpt-4o-mini</span></span>
+      <span class="tag tag-cla">Model B · <span id="modelClaudeTag">anthropic/claude-haiku-4-5</span></span>
+      <span class="tag tag-n">Naive Bayes · TF-IDF</span>
+      <span class="tag tag-n">Twitter / X Indonesia</span>
+    </div>
+    <p style="font-family:var(--mono);font-size:11px;color:var(--ink3)">Target akurasi minimum: <span id="targetAccuracy">80%</span></p>
+  </div>
+</header>
+
+<main class="body">
+
+  <!-- § 01 RINGKASAN -->
+  <section>
+    <p class="section-label">§ 01 — ringkasan penelitian</p>
+    <div class="lede-grid ani ani-3">
+      <div class="lede-cell big">
+        <p class="lede-label">Temuan Utama</p>
+        <div class="lede-val" style="font-size:16px;line-height:1.4">Kedua model tidak mencapai target <span id="targetAccuracyInline">80%</span> akurasi. Penyebab utama: <span class="lede-accent">inter-LLM agreement</span> hanya <span id="agreementRateInline">32,2%</span> — jauh di bawah benchmark <span id="agreementBenchmark">86–91%</span>.</div>
+        <p class="lede-sub" style="margin-top:8px">Ketika dua LLM hanya sepakat pada sepertiga data, model tidak punya <em>ground truth</em> yang reliabel untuk belajar.</p>
+      </div>
+      <div class="lede-cell">
+        <p class="lede-label">Akurasi Model A</p>
+        <div class="lede-val" style="color:var(--gpt)" id="accGpt">71,25%</div>
+        <p class="lede-sub"><span id="modelGptName">GPT-4o-mini</span><br>α = <span id="alphaGpt">0,1</span> · <span id="testCount">400</span> test tweets</p>
+      </div>
+      <div class="lede-cell">
+        <p class="lede-label">Akurasi Model B</p>
+        <div class="lede-val" style="color:var(--cla)" id="accClaude">65,00%</div>
+        <p class="lede-sub"><span id="modelClaudeName">Claude Haiku 4.5</span><br>α = <span id="alphaClaude">0,1</span> · <span id="testCountB">400</span> test tweets</p>
+      </div>
+      <div class="lede-cell">
+        <p class="lede-label">Agreement Rate</p>
+        <div class="lede-val lede-accent" id="agreementRate">32,2%</div>
+        <p class="lede-sub">GPT vs Claude<br>p-value = <span id="pValueTop">0,038</span> (T-test)</p>
+      </div>
+    </div>
+    <div class="finding ani ani-4">
+      <p class="finding-label">⚠ Temuan Kritis</p>
+      <p>Dari <span id="cleanCountInline">2.000</span> tweet, GPT dan Claude memberikan label yang <strong>berbeda pada ~<span id="diffCount">1.356</span> tweet (<span id="diffPct">67,8%</span>)</strong>. Benchmark Nasution &amp; Onan (2024) melaporkan agreement <span id="agreementBenchmarkInline">86–91%</span> antara LLM dan human annotator pada dataset yang lebih eksplisit. Dataset MBG mengandung ambiguitas tinggi — sarkasme, code-switching, pernyataan bersyarat — yang membuat kedua LLM tidak bisa mencapai konsensus.</p>
+    </div>
+  </section>
+
+  <!-- § 02 DISTRIBUSI SENTIMEN -->
+  <section>
+    <p class="section-label">§ 02 — distribusi label sentimen</p>
+    <div class="two-col">
+      <div>
+        <div class="card">
+          <p class="card-title">Perbandingan jumlah label per kelas (n=<span id="distN">2.000</span>)</p>
+          <div class="legend">
+            <div class="legend-item"><span class="legend-sq" style="background:#1a3f6b"></span>Model A (GPT)</div>
+            <div class="legend-item"><span class="legend-sq" style="background:#6b3a1a;opacity:.8"></span>Model B (Claude)</div>
+          </div>
+          <div class="chart-wrap" style="height:230px;margin-top:14px">
+            <canvas id="chartDist" role="img" aria-label="Grouped bar chart distribusi sentimen GPT vs Claude"></canvas>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="ghost">
+          <strong>Cara membaca grafik ini</strong><br><br>
+          Setiap pasang batang mewakili satu kelas sentimen. Jika kedua LLM "melihat" data dengan cara sama, tinggi batang mereka seharusnya hampir sama. Perbedaan tinggi = perbedaan perspektif antar model.
+        </div>
+        <div class="ghost">
+          GPT lebih "seimbang": <span class="hi hi-pos" id="gptPosPct">POSITIF 33,8%</span> · <span class="hi hi-neg" id="gptNegPct">NEGATIF 42,3%</span> · <span class="hi hi-neu" id="gptNeuPct">NETRAL 23,9%</span><br><br>
+          Claude jauh lebih "kritis": <span class="hi hi-pos" id="claPosPct">POSITIF 27,7%</span> · <span class="hi hi-neg" id="claNegPct">NEGATIF 55,1%</span> · <span class="hi hi-neu" id="claNeuPct">NETRAL 17,3%</span><br><br>
+          Claude melabeli <strong><span id="claNegCount">1.101</span> tweet</strong> sebagai negatif — <strong><span id="claNegDiff">256</span> lebih banyak</strong> dari GPT. Selisih inilah yang menyebabkan Model B bias ke kelas NEGATIF dan under-predict POSITIF.
+        </div>
+        <div class="ghost">
+          <strong>Implikasi langsung:</strong> Recall POSITIF Model B hanya <span class="hi hi-neg" id="claPosRecall">0,45</span> — dari setiap 2 tweet positif, hanya 1 yang terdeteksi. Model "belajar" bahwa lebih dari separuh tweet pasti negatif.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- § 03 PERFORMA MODEL -->
+  <section>
+    <p class="section-label">§ 03 — performa model &amp; metrik evaluasi</p>
+    <div class="two-col">
+      <div>
+        <div class="card">
+          <p class="card-title">Accuracy · Precision · Recall · F1-Score (macro avg)</p>
+          <div class="chart-wrap" style="height:250px;margin-top:8px">
+            <canvas id="chartMetrics" role="img" aria-label="Bar chart perbandingan metrik evaluasi Model A dan B"></canvas>
+          </div>
+          <p style="font-family:var(--mono);font-size:10px;color:var(--ink3);margin-top:10px">— — garis merah = target minimum penelitian</p>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <table class="mt">
+          <thead>
+            <tr>
+              <th>Metrik</th>
+              <th style="color:var(--gpt)">Model A</th>
+              <th style="color:var(--cla)">Model B</th>
+              <th>Target</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Accuracy</td><td class="mono" style="color:var(--gpt)" id="mtAccGpt">71,25%</td><td class="mono" style="color:var(--cla)" id="mtAccCla">65,00%</td><td class="mono" style="color:var(--ink3)" id="mtAccTarget">≥ 80%</td></tr>
+            <tr><td>Precision</td><td class="mono" style="color:var(--gpt)" id="mtPrecGpt">69,01%</td><td class="mono" style="color:var(--cla)" id="mtPrecCla">63,75%</td><td class="mono" style="color:var(--ink3)" id="mtPrecTarget">≥ 78%</td></tr>
+            <tr><td>Recall</td><td class="mono" style="color:var(--gpt)" id="mtRecGpt">64,98%</td><td class="mono" style="color:var(--cla)" id="mtRecCla">57,44%</td><td class="mono" style="color:var(--ink3)" id="mtRecTarget">≥ 75%</td></tr>
+            <tr><td>F1-Score</td><td class="mono" style="color:var(--gpt)" id="mtF1Gpt">66,44%</td><td class="mono" style="color:var(--cla)" id="mtF1Cla">59,43%</td><td class="mono" style="color:var(--ink3)" id="mtF1Target">≥ 76%</td></tr>
+          </tbody>
+        </table>
+        <div class="pullquote">
+          <p>Perbedaan performa signifikan secara statistik (p = <span id="pValueMid">0,038</span>), tapi selisih praktis hanya <span id="practicalDiff">1,70%</span> — di bawah threshold <span id="practicalThreshold">5%</span>.</p>
+          <cite>Paired T-Test · 5-fold cross-validation · CI 95%</cite>
+        </div>
+        <div class="ghost">
+          <strong>Statistik vs praktis</strong><br><br>
+          P-value <span class="hi hi-warn" id="pValueExplain">0,038</span> artinya perbedaan tidak terjadi secara kebetulan. Tapi selisih <span class="hi" id="practicalDiffExplain">1,70%</span> terlalu kecil untuk berdampak pada penggunaan nyata. GPT memang lebih baik — tapi tidak drastis.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- § 04 CONFUSION MATRIX -->
+  <section>
+    <p class="section-label">§ 04 — confusion matrix</p>
+    <div class="two-col">
+      <div class="card">
+        <p class="card-title"><span class="dot" style="background:var(--gpt)"></span>Model A — GPT-labeled · <span id="cmAccGpt">71,25%</span></p>
+        <div id="cmA"></div>
+        <div class="ghost" style="margin-top:16px">
+          <strong>Cara baca:</strong> Baris = label aktual, Kolom = prediksi. Kotak <strong>diagonal = prediksi benar</strong>. Di luar diagonal = salah klasifikasi.<br><br>
+          NETRAL paling bermasalah — <span id="neutralMisclassPct">55%</span> tweet netral aktual (<span class="hi hi-neu"><span id="neutralMisclass">27</span> dari <span id="neutralActual">49</span></span>) salah diprediksi sebagai NEGATIF. Tweet netral mengandung kata-kata dari kedua kelas lain sehingga sulit dibedakan.
+        </div>
+      </div>
+      <div class="card">
+        <p class="card-title"><span class="dot" style="background:var(--cla)"></span>Model B — Claude-labeled · <span id="cmAccCla">65,00%</span></p>
+        <div id="cmB"></div>
+        <div class="ghost" style="margin-top:16px">
+          Model B sangat bias ke NEGATIF: dari <span class="hi hi-pos"><span id="claPosActual">111</span> tweet POSITIF aktual</span>, hanya <span id="claPosCorrect">50</span> diprediksi benar. Sisanya dikira NEGATIF — langsung akibat distribusi label Claude yang <span id="claNegPctInline">55,1%</span> negatif.<br><br>
+          Sebaliknya, NEGATIF recall-nya tinggi (<span class="hi hi-neg" id="claNegRecall">0,81</span>) karena model over-predict kelas ini.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- § 05 CROSS VALIDATION -->
+  <section>
+    <p class="section-label">§ 05 — 5-fold cross validation &amp; stabilitas model</p>
+    <div class="two-col">
+      <div class="card">
+        <p class="card-title">Akurasi per fold (n=<span id="cvN">5</span>)</p>
+        <div class="legend" style="margin-bottom:12px">
+          <div class="legend-item"><span class="legend-sq" style="background:#1a3f6b"></span>Model A (GPT) · mean <span id="cvMeanGpt">0,7065</span> ± <span id="cvSdGpt">0,0082</span></div>
+          <div class="legend-item"><span class="legend-sq" style="background:#6b3a1a;opacity:.8"></span>Model B (Claude) · mean <span id="cvMeanCla">0,6895</span> ± <span id="cvSdCla">0,0155</span></div>
+        </div>
+        <div class="chart-wrap" style="height:210px">
+          <canvas id="chartCV" role="img" aria-label="Line chart cross validation accuracy per fold"></canvas>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="ghost">
+          <strong>Apa itu cross-validation?</strong><br><br>
+          Data dibagi 5 bagian. Model dilatih 5 kali — tiap kali 4 bagian untuk training, 1 untuk testing. Ini memastikan hasil tidak bergantung pada satu pembagian data tertentu.
+        </div>
+        <div class="ghost">
+          Standar deviasi (SD) Model A = <span class="hi hi-gpt" id="cvSdGptInline">0,0082</span> vs Model B = <span class="hi hi-cla" id="cvSdClaInline">0,0155</span>.<br><br>
+          SD lebih kecil = lebih <strong>stabil dan konsisten</strong>. Model B lebih "volatile" karena distribusi labelnya yang ekstrem membuat performa bergantung pada komposisi tiap fold.
+        </div>
+
+        <div style="border:0.5px solid var(--rule);padding:16px">
+          <p style="font-family:var(--mono);font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Paired T-Test Result</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div><p style="font-family:var(--mono);font-size:10px;color:var(--ink3)">T-statistic</p><p style="font-family:var(--serif);font-size:22px;font-weight:700" id="tStat">3,0595</p></div>
+            <div><p style="font-family:var(--mono);font-size:10px;color:var(--ink3)">P-value</p><p style="font-family:var(--serif);font-size:22px;font-weight:700;color:var(--neg)" id="pValueTTest">0,0377</p></div>
+          </div>
+          <p style="font-family:var(--mono);font-size:10px;color:var(--ink3);margin-top:10px;border-top:0.5px solid var(--rule);padding-top:8px">p &lt; 0,05 → H2 diterima: perbedaan signifikan secara statistik dengan confidence 95%</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- § 06 PER-CLASS DETAIL -->
+  <section>
+    <p class="section-label">§ 06 — performa per kelas sentimen</p>
+    <div class="two-col">
+      <div class="card">
+        <p class="card-title"><span class="dot" style="background:var(--gpt)"></span>Model A (GPT-labeled)</p>
+        <p style="font-family:var(--mono);font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Precision</p>
+        <div class="pb-group" style="margin-bottom:18px">
+          <div class="pb-row"><span class="pb-lbl" style="color:var(--pos)">POSITIF</span><div class="pb-track"><div class="pb-fill" data-pb="gpt-precision-positif" style="width:70%;background:var(--pos)"></div></div><span class="pb-val" style="color:var(--pos)" id="gptPrecPos">0,70</span></div>
+          <div class="pb-row"><span class="pb-lbl" style="color:var(--neg)">NEGATIF</span><div class="pb-track"><div class="pb-fill" data-pb="gpt-precision-negatif" style="width:74%;background:var(--neg)"></div></div><span class="pb-val" style="color:var(--neg)" id="gptPrecNeg">0,74</span></div>
+          <div class="pb-row"><span class="pb-lbl" style="color:var(--neu)">NETRAL</span><div class="pb-track"><div class="pb-fill" data-pb="gpt-precision-netral" style="width:63%;background:var(--neu)"></div></div><span class="pb-val" style="color:var(--neu)" id="gptPrecNeu">0,63</span></div>
+        </div>
+        <div class="rule"></div>
+        <p style="font-family:var(--mono);font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;margin:14px 0 10px">Recall</p>
+        <div class="pb-group">
+          <div class="pb-row"><span class="pb-lbl" style="color:var(--pos)">POSITIF</span><div class="pb-track"><div class="pb-fill" data-pb="gpt-recall-positif" style="width:78%;background:var(--pos)"></div></div><span class="pb-val" style="color:var(--pos)" id="gptRecPos">0,78</span></div>
+          <div class="pb-row"><span class="pb-lbl" style="color:var(--neg)">NEGATIF</span><div class="pb-track"><div class="pb-fill" data-pb="gpt-recall-negatif" style="width:73%;background:var(--neg)"></div></div><span class="pb-val" style="color:var(--neg)" id="gptRecNeg">0,73</span></div>
+          <div class="pb-row"><span class="pb-lbl" style="color:var(--neu)">NETRAL</span><div class="pb-track"><div class="pb-fill" data-pb="gpt-recall-netral" style="width:45%;background:var(--neu)"></div></div><span class="pb-val" style="color:var(--neu)" id="gptRecNeu">0,45</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <p class="card-title"><span class="dot" style="background:var(--cla)"></span>Model B (Claude-labeled)</p>
+        <p style="font-family:var(--mono);font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Precision</p>
+        <div class="pb-group" style="margin-bottom:18px">
+          <div class="pb-row"><span class="pb-lbl" style="color:var(--pos)">POSITIF</span><div class="pb-track"><div class="pb-fill" data-pb="claude-precision-positif" style="width:65%;background:var(--pos)"></div></div><span class="pb-val" style="color:var(--pos)" id="claPrecPos">0,65</span></div>
+          <div class="pb-row"><span class="pb-lbl" style="color:var(--neg)">NEGATIF</span><div class="pb-track"><div class="pb-fill" data-pb="claude-precision-negatif" style="width:66%;background:var(--neg)"></div></div><span class="pb-val" style="color:var(--neg)" id="claPrecNeg">0,66</span></div>
+          <div class="pb-row"><span class="pb-lbl" style="color:var(--neu)">NETRAL</span><div class="pb-track"><div class="pb-fill" data-pb="claude-precision-netral" style="width:60%;background:var(--neu)"></div></div><span class="pb-val" style="color:var(--neu)" id="claPrecNeu">0,60</span></div>
+        </div>
+        <div class="rule"></div>
+        <p style="font-family:var(--mono);font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;margin:14px 0 10px">Recall</p>
+        <div class="pb-group">
+          <div class="pb-row"><span class="pb-lbl" style="color:var(--pos)">POSITIF</span><div class="pb-track"><div class="pb-fill" data-pb="claude-recall-positif" style="width:45%;background:var(--pos)"></div></div><span class="pb-val" style="color:var(--pos)" id="claRecPos">0,45</span></div>
+          <div class="pb-row"><span class="pb-lbl" style="color:var(--neg)">NEGATIF</span><div class="pb-track"><div class="pb-fill" data-pb="claude-recall-negatif" style="width:81%;background:var(--neg)"></div></div><span class="pb-val" style="color:var(--neg)" id="claRecNeg">0,81</span></div>
+          <div class="pb-row"><span class="pb-lbl" style="color:var(--neu)">NETRAL</span><div class="pb-track"><div class="pb-fill" data-pb="claude-recall-netral" style="width:46%;background:var(--neu)"></div></div><span class="pb-val" style="color:var(--neu)" id="claRecNeu">0,46</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="ghost" style="margin-top:16px">
+      NETRAL adalah kelas paling sulit untuk kedua model — recall hanya <span class="hi hi-neu" id="neutralRecallRange">0,45–0,46</span>. Artinya lebih dari separuh tweet yang sebenarnya netral salah diklasifikasi. Ini wajar: tweet netral mengandung campuran kosakata dari kelas positif dan negatif, sehingga TF-IDF tidak dapat membedakannya secara konsisten.
+    </div>
+  </section>
+
+  <!-- § 07 WORD CLOUD -->
+  <section>
+    <p class="section-label">§ 07 — kata kunci dominan per kelas sentimen</p>
+    <p style="font-size:13px;color:var(--ink3);margin-bottom:20px">Berdasarkan TF-IDF weight — ukuran token mencerminkan dominansi relatif dalam dataset GPT-labeled</p>
+    <div class="three-col">
+      <div class="card">
+        <p class="card-title"><span class="dot" style="background:var(--pos)"></span>Sentimen Positif</p>
+        <div class="wt-wrap" id="wtPos"></div>
+        <div class="ghost" style="margin-top:14px">
+          Dominasi kata <em>"semoga"</em> dan <em>"harap"</em> menunjukkan dukungan yang <strong>bersifat harapan</strong>, bukan kepuasan atas hasil. Publik mendukung konsep MBG tapi menunggu bukti pelaksanaan.
+        </div>
+      </div>
+      <div class="card">
+        <p class="card-title"><span class="dot" style="background:var(--neg)"></span>Sentimen Negatif</p>
+        <div class="wt-wrap" id="wtNeg"></div>
+        <div class="ghost" style="margin-top:14px">
+          Kata <em>"implementasi"</em> mendominasi — bukan <em>"program"</em>. Ini menunjukkan kritik ditujukan pada <strong>eksekusi</strong>, bukan konsep program itu sendiri. <em>"Transparansi"</em> dan <em>"anggaran"</em> = kekhawatiran akuntabilitas.
+        </div>
+      </div>
+      <div class="card">
+        <p class="card-title"><span class="dot" style="background:var(--neu)"></span>Sentimen Netral</p>
+        <div class="wt-wrap" id="wtNeu"></div>
+        <div class="ghost" style="margin-top:14px">
+          Kata-kata informatif tanpa muatan opini. <em>"Sekolah"</em>, <em>"siswa"</em>, <em>"menu"</em> = laporan faktual pelaksanaan di lapangan, sesuai definisi sentimen netral yang ditetapkan.
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>Tugas Akhir · Program Studi Sistem Informasi · Universitas Ciputra Surabaya · 2026</p>
+  <p>Data: Twitter/X Indonesia · <span id="footerPeriod">Feb 2024 – Des 2025</span> · n = <span id="footerClean">2.000</span> tweets bersih dari <span id="footerRaw">2.552</span> raw</p>
+</footer>
+
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+/* ── CHARTS ── */
+const gptColor = '#1a3f6b';
+const claColor = '#6b3a1a';
+const gptAlpha = 'rgba(26,63,107,0.75)';
+const claAlpha = 'rgba(107,58,26,0.65)';
+const gridColor = 'rgba(0,0,0,0.07)';
+const tickColor = '#6b6b6b';
+const fontMono = "'IBM Plex Mono', monospace";
+
+const rawDataEl = document.getElementById('dashboard-data');
+const DASH_DATA = rawDataEl ? JSON.parse(rawDataEl.textContent) : null;
+if (!DASH_DATA) {
+  return;
+}
+
+const fmtPct = (v, digits = 1) => `${v.toFixed(digits).replace('.', ',')}%`;
+const fmtPct2 = (v) => `${v.toFixed(2).replace('.', ',')}%`;
+const fmtNum = (v) => v.toLocaleString('id-ID');
+const fmtDec = (v, digits = 4) => v.toFixed(digits).replace('.', ',');
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function setPB(id, value) {
+  const el = document.querySelector(`[data-pb="${id}"]`);
+  if (!el) return;
+  const pct = Math.round(value * 100);
+  el.style.width = `${pct}%`;
+}
+
+if (DASH_DATA) {
+  setText('metaAuthor', DASH_DATA.meta.author);
+  setText('metaNim', `NIM ${DASH_DATA.meta.nim}`);
+  setText('metaPeriod', DASH_DATA.meta.period.label);
+  setText('metaCleanCount', fmtNum(DASH_DATA.meta.dataset.clean));
+  setText('modelGptTag', DASH_DATA.meta.models.gptModel);
+  setText('modelClaudeTag', DASH_DATA.meta.models.claudeModel);
+  setText('targetAccuracy', `${DASH_DATA.targets.accuracy}%`);
+  setText('targetAccuracyInline', `${DASH_DATA.targets.accuracy}%`);
+  setText('agreementRateInline', fmtPct(DASH_DATA.summary.agreementRate * 100));
+  setText('agreementBenchmark', DASH_DATA.summary.agreementBenchmark);
+  setText('accGpt', fmtPct2(DASH_DATA.metrics.gpt[0]));
+  setText('accClaude', fmtPct2(DASH_DATA.metrics.claude[0]));
+  setText('modelGptName', DASH_DATA.meta.models.gptLabel);
+  setText('modelClaudeName', DASH_DATA.meta.models.claudeLabel);
+  setText('alphaGpt', DASH_DATA.summary.alphaGpt);
+  setText('alphaClaude', DASH_DATA.summary.alphaClaude);
+  setText('testCount', fmtNum(DASH_DATA.summary.testSize));
+  setText('testCountB', fmtNum(DASH_DATA.summary.testSize));
+  setText('agreementRate', fmtPct(DASH_DATA.summary.agreementRate * 100));
+  setText('pValueTop', DASH_DATA.summary.pValueDisplay);
+  setText('cleanCountInline', fmtNum(DASH_DATA.meta.dataset.clean));
+  setText('diffCount', fmtNum(DASH_DATA.summary.diffCount));
+  setText('diffPct', fmtPct(DASH_DATA.summary.diffPct));
+  setText('agreementBenchmarkInline', DASH_DATA.summary.agreementBenchmark);
+  setText('distN', fmtNum(DASH_DATA.meta.dataset.clean));
+
+  setText('gptPosPct', `POSITIF ${fmtPct(DASH_DATA.distribution.gptPct.positif)}`);
+  setText('gptNegPct', `NEGATIF ${fmtPct(DASH_DATA.distribution.gptPct.negatif)}`);
+  setText('gptNeuPct', `NETRAL ${fmtPct(DASH_DATA.distribution.gptPct.netral)}`);
+  setText('claPosPct', `POSITIF ${fmtPct(DASH_DATA.distribution.claudePct.positif)}`);
+  setText('claNegPct', `NEGATIF ${fmtPct(DASH_DATA.distribution.claudePct.negatif)}`);
+  setText('claNeuPct', `NETRAL ${fmtPct(DASH_DATA.distribution.claudePct.netral)}`);
+  setText('claNegCount', fmtNum(DASH_DATA.distribution.claude.negatif));
+  setText('claNegDiff', fmtNum(DASH_DATA.summary.claudeNegDiff));
+  setText('claPosRecall', fmtDec(DASH_DATA.perClass.claude.recall.positif, 2));
+
+  setText('mtAccGpt', fmtPct2(DASH_DATA.metrics.gpt[0]));
+  setText('mtAccCla', fmtPct2(DASH_DATA.metrics.claude[0]));
+  setText('mtPrecGpt', fmtPct2(DASH_DATA.metrics.gpt[1]));
+  setText('mtPrecCla', fmtPct2(DASH_DATA.metrics.claude[1]));
+  setText('mtRecGpt', fmtPct2(DASH_DATA.metrics.gpt[2]));
+  setText('mtRecCla', fmtPct2(DASH_DATA.metrics.claude[2]));
+  setText('mtF1Gpt', fmtPct2(DASH_DATA.metrics.gpt[3]));
+  setText('mtF1Cla', fmtPct2(DASH_DATA.metrics.claude[3]));
+  setText('mtAccTarget', `≥ ${DASH_DATA.targets.accuracy}%`);
+  setText('mtPrecTarget', `≥ ${DASH_DATA.targets.precision}%`);
+  setText('mtRecTarget', `≥ ${DASH_DATA.targets.recall}%`);
+  setText('mtF1Target', `≥ ${DASH_DATA.targets.f1}%`);
+
+  setText('pValueMid', DASH_DATA.summary.pValueDisplay);
+  setText('practicalDiff', fmtPct(DASH_DATA.summary.practicalDiffPct));
+  setText('practicalThreshold', `${DASH_DATA.summary.practicalThresholdPct}%`);
+  setText('pValueExplain', DASH_DATA.summary.pValueDisplay);
+  setText('practicalDiffExplain', fmtPct(DASH_DATA.summary.practicalDiffPct));
+
+  setText('cmAccGpt', fmtPct2(DASH_DATA.metrics.gpt[0]));
+  setText('cmAccCla', fmtPct2(DASH_DATA.metrics.claude[0]));
+  setText('neutralMisclass', fmtNum(DASH_DATA.summary.neutralMisclass));
+  setText('neutralActual', fmtNum(DASH_DATA.summary.neutralActual));
+  setText('neutralMisclassPct', `${Math.round((DASH_DATA.summary.neutralMisclass / DASH_DATA.summary.neutralActual) * 100)}%`);
+  setText('claPosActual', fmtNum(DASH_DATA.summary.claudePosActual));
+  setText('claPosCorrect', fmtNum(DASH_DATA.summary.claudePosCorrect));
+  setText('claNegPctInline', fmtPct(DASH_DATA.distribution.claudePct.negatif));
+  setText('claNegRecall', fmtDec(DASH_DATA.perClass.claude.recall.negatif, 2));
+
+  setText('cvN', DASH_DATA.cv.labels.length);
+  setText('cvMeanGpt', fmtDec(DASH_DATA.cv.mean.gpt, 4));
+  setText('cvSdGpt', fmtDec(DASH_DATA.cv.sd.gpt, 4));
+  setText('cvMeanCla', fmtDec(DASH_DATA.cv.mean.claude, 4));
+  setText('cvSdCla', fmtDec(DASH_DATA.cv.sd.claude, 4));
+  setText('cvSdGptInline', fmtDec(DASH_DATA.cv.sd.gpt, 4));
+  setText('cvSdClaInline', fmtDec(DASH_DATA.cv.sd.claude, 4));
+  setText('tStat', fmtDec(DASH_DATA.summary.tStatistic, 4));
+  setText('pValueTTest', DASH_DATA.summary.pValueTTest);
+
+  setText('gptPrecPos', fmtDec(DASH_DATA.perClass.gpt.precision.positif, 2));
+  setText('gptPrecNeg', fmtDec(DASH_DATA.perClass.gpt.precision.negatif, 2));
+  setText('gptPrecNeu', fmtDec(DASH_DATA.perClass.gpt.precision.netral, 2));
+  setText('gptRecPos', fmtDec(DASH_DATA.perClass.gpt.recall.positif, 2));
+  setText('gptRecNeg', fmtDec(DASH_DATA.perClass.gpt.recall.negatif, 2));
+  setText('gptRecNeu', fmtDec(DASH_DATA.perClass.gpt.recall.netral, 2));
+
+  setText('claPrecPos', fmtDec(DASH_DATA.perClass.claude.precision.positif, 2));
+  setText('claPrecNeg', fmtDec(DASH_DATA.perClass.claude.precision.negatif, 2));
+  setText('claPrecNeu', fmtDec(DASH_DATA.perClass.claude.precision.netral, 2));
+  setText('claRecPos', fmtDec(DASH_DATA.perClass.claude.recall.positif, 2));
+  setText('claRecNeg', fmtDec(DASH_DATA.perClass.claude.recall.negatif, 2));
+  setText('claRecNeu', fmtDec(DASH_DATA.perClass.claude.recall.netral, 2));
+
+  setText('neutralRecallRange', `${fmtDec(DASH_DATA.summary.neutralRecallRange[0], 2)}–${fmtDec(DASH_DATA.summary.neutralRecallRange[1], 2)}`);
+
+  setText('footerPeriod', DASH_DATA.meta.period.label);
+  setText('footerClean', fmtNum(DASH_DATA.meta.dataset.clean));
+  setText('footerRaw', fmtNum(DASH_DATA.meta.dataset.raw));
+
+  setPB('gpt-precision-positif', DASH_DATA.perClass.gpt.precision.positif);
+  setPB('gpt-precision-negatif', DASH_DATA.perClass.gpt.precision.negatif);
+  setPB('gpt-precision-netral', DASH_DATA.perClass.gpt.precision.netral);
+  setPB('gpt-recall-positif', DASH_DATA.perClass.gpt.recall.positif);
+  setPB('gpt-recall-negatif', DASH_DATA.perClass.gpt.recall.negatif);
+  setPB('gpt-recall-netral', DASH_DATA.perClass.gpt.recall.netral);
+  setPB('claude-precision-positif', DASH_DATA.perClass.claude.precision.positif);
+  setPB('claude-precision-negatif', DASH_DATA.perClass.claude.precision.negatif);
+  setPB('claude-precision-netral', DASH_DATA.perClass.claude.precision.netral);
+  setPB('claude-recall-positif', DASH_DATA.perClass.claude.recall.positif);
+  setPB('claude-recall-negatif', DASH_DATA.perClass.claude.recall.negatif);
+  setPB('claude-recall-netral', DASH_DATA.perClass.claude.recall.netral);
+}
+
+/* Chart 1: Distribusi */
+new Chart(document.getElementById('chartDist'), {
+  type: 'bar',
+  data: {
+    labels: DASH_DATA.distribution.labels,
+    datasets: [
+      { label: 'Model A (GPT)', data: DASH_DATA.distribution.gptArray,
+        backgroundColor: gptAlpha, borderColor: gptColor, borderWidth: 1, borderRadius: 0 },
+      { label: 'Model B (Claude)', data: DASH_DATA.distribution.claudeArray,
+        backgroundColor: claAlpha, borderColor: claColor, borderWidth: 1, borderRadius: 0 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.raw.toLocaleString('id-ID')} (${((c.raw/DASH_DATA.meta.dataset.clean)*100).toFixed(1)}%)` } }
+    },
+    scales: {
+      x: { ticks: { color: tickColor, font: { family: fontMono, size: 10 } }, grid: { color: gridColor } },
+      y: { ticks: { color: tickColor, font: { family: fontMono, size: 10 } }, grid: { color: gridColor },
+           title: { display: true, text: 'jumlah tweet', color: tickColor, font: { family: fontMono, size: 9 } } }
+    }
+  }
+});
+
+/* Chart 2: Metrics */
+new Chart(document.getElementById('chartMetrics'), {
+  type: 'bar',
+  data: {
+    labels: DASH_DATA.metrics.labels,
+    datasets: [
+      { label: 'Model A (GPT)', data: DASH_DATA.metrics.gpt,
+        backgroundColor: gptAlpha, borderColor: gptColor, borderWidth: 1, borderRadius: 0 },
+      { label: 'Model B (Claude)', data: DASH_DATA.metrics.claude,
+        backgroundColor: claAlpha, borderColor: claColor, borderWidth: 1, borderRadius: 0 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.raw}%` } }
+    },
+    scales: {
+      x: { ticks: { color: tickColor, font: { family: fontMono, size: 10 } }, grid: { color: gridColor } },
+      y: { min: 50, max: 100,
+           ticks: { color: tickColor, font: { family: fontMono, size: 10 }, callback: v => v+'%' },
+           grid: { color: gridColor } }
+    }
+  },
+  plugins: [{
+    id: 'targets',
+    afterDraw(ch) {
+      const ctx = ch.ctx, y = ch.scales.y;
+      const targets = [DASH_DATA.targets.accuracy, DASH_DATA.targets.precision, DASH_DATA.targets.recall, DASH_DATA.targets.f1];
+      ch.data.labels.forEach((_, i) => {
+        const m0 = ch.getDatasetMeta(0), m1 = ch.getDatasetMeta(1);
+        const b0 = m0.data[i], b1 = m1.data[i];
+        const yp = y.getPixelForValue(targets[i]);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(139,26,26,0.55)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4,3]);
+        ctx.beginPath();
+        ctx.moveTo(b0.x - b0.width/2, yp);
+        ctx.lineTo(b1.x + b1.width/2, yp);
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+  }]
+});
+
+/* Chart 3: CV */
+new Chart(document.getElementById('chartCV'), {
+  type: 'line',
+  data: {
+    labels: DASH_DATA.cv.labels,
+    datasets: [
+      { label: 'Model A (GPT)', data: DASH_DATA.cv.gpt,
+        borderColor: gptColor, backgroundColor: 'rgba(26,63,107,0.06)',
+        borderWidth: 2, pointRadius: 5, pointBackgroundColor: gptColor, fill: true, tension: 0.3 },
+      { label: 'Model B (Claude)', data: DASH_DATA.cv.claude,
+        borderColor: claColor, backgroundColor: 'rgba(107,58,26,0.06)',
+        borderWidth: 2, pointRadius: 5, pointBackgroundColor: claColor, fill: true, tension: 0.3,
+        borderDash: [5,3] }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.raw.toFixed(4)}` } }
+    },
+    scales: {
+      x: { ticks: { color: tickColor, font: { family: fontMono, size: 10 } }, grid: { color: gridColor } },
+      y: { min: 0.63, max: 0.75,
+           ticks: { color: tickColor, font: { family: fontMono, size: 10 }, callback: v => v.toFixed(2) },
+           grid: { color: gridColor } }
+    }
+  }
+});
+
+/* ── CONFUSION MATRIX ── */
+const cmDataA = DASH_DATA.confusion.gpt;
+const cmDataB = DASH_DATA.confusion.claude;
+const classes = DASH_DATA.confusion.classes;
+
+function buildCM(id, data, accentHex) {
+  const wrap = document.getElementById(id);
+  const totals = data.map(r => r.reduce((a,b)=>a+b,0));
+  const maxVal = Math.max(...data.flat());
+  const el = document.createElement;
+
+  const hdr = document.createElement('div');
+  hdr.className = 'cm-header-row';
+  hdr.innerHTML = `<div class="cm-col-label" style="font-size:8px;color:#aaa">▼ prediksi</div>` +
+    classes.map(c=>`<div class="cm-col-label">${c}</div>`).join('');
+  wrap.appendChild(hdr);
+
+  data.forEach((row, ri) => {
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'cm-row';
+    const rl = document.createElement('div');
+    rl.className = 'cm-row-label';
+    rl.innerHTML = `<span style="font-size:8px;color:#aaa">aktual ▶</span><br>${classes[ri]}`;
+    rowDiv.appendChild(rl);
+    row.forEach((val, ci) => {
+      const cell = document.createElement('div');
+      cell.className = 'cm-cell';
+      const pct = Math.round((val/totals[ri])*100);
+      const intensity = val/maxVal;
+      if (ri===ci) {
+        const hex = accentHex;
+        cell.style.background = `${hex}${Math.round(20+intensity*55).toString(16).padStart(2,'0')}`;
+        cell.style.borderColor = hex;
+        cell.style.color = accentHex;
+      } else {
+        const errI = Math.min(val/40, 1);
+        cell.style.background = `rgba(139,26,26,${0.04+errI*0.18})`;
+        cell.style.borderColor = val>15 ? 'rgba(139,26,26,0.3)' : 'transparent';
+        cell.style.color = val>15 ? '#8b1a1a' : '#aaa';
+      }
+      cell.innerHTML = `<span class="n">${val}</span><span class="pct">${pct}%</span>`;
+      rowDiv.appendChild(cell);
+    });
+    wrap.appendChild(rowDiv);
+  });
+
+  const ax = document.createElement('p');
+  ax.className = 'cm-axis';
+  ax.textContent = 'baris = aktual · kolom = prediksi · diagonal = benar';
+  wrap.appendChild(ax);
+}
+
+buildCM('cmA', cmDataA, '#1a3f6b');
+buildCM('cmB', cmDataB, '#6b3a1a');
+
+/* ── WORD TOKENS ── */
+const wordsPos = DASH_DATA.words.positif;
+const wordsNeg = DASH_DATA.words.negatif;
+const wordsNeu = DASH_DATA.words.netral;
+
+function buildWT(id, words, textColor, borderColor, bgColor) {
+  const wrap = document.getElementById(id);
+  [...words].sort(()=>Math.random()-.5).forEach(({w,s}) => {
+    const span = document.createElement('span');
+    span.className = 'wt';
+    span.textContent = w;
+    span.style.fontSize = Math.round(s*0.48+8)+'px';
+    span.style.color = textColor;
+    span.style.borderColor = borderColor;
+    span.style.background = bgColor;
+    span.style.opacity = (0.45 + (s/32)*0.55).toFixed(2);
+    wrap.appendChild(span);
+  });
+}
+
+buildWT('wtPos', wordsPos, 'var(--pos)', 'rgba(26,107,58,0.3)', 'rgba(26,107,58,0.05)');
+buildWT('wtNeg', wordsNeg, 'var(--neg)', 'rgba(139,26,26,0.3)', 'rgba(139,26,26,0.05)');
+buildWT('wtNeu', wordsNeu, 'var(--neu)', 'rgba(58,74,107,0.3)', 'rgba(58,74,107,0.05)');
+});
+</script>
+
+<script id="dashboard-data" type="application/json">
+{
+  "meta": {
+    "author": "Cevin Jonathan Liep",
+    "nim": "0706022210035",
+    "period": {
+      "label": "Feb 2024 – Des 2025"
+    },
+    "dataset": {
+      "clean": 2000,
+      "raw": 2552
+    },
+    "models": {
+      "gptModel": "openai/gpt-4o-mini",
+      "claudeModel": "anthropic/claude-haiku-4-5",
+      "gptLabel": "GPT-4o-mini",
+      "claudeLabel": "Claude Haiku 4.5"
+    }
+  },
+  "targets": {
+    "accuracy": 80,
+    "precision": 78,
+    "recall": 75,
+    "f1": 76
+  },
+  "summary": {
+    "agreementRate": 0.7755,
+    "agreementBenchmark": "86–91%",
+    "pValueDisplay": "0,046",
+    "pValueTTest": "0,0456",
+    "tStatistic": 2.8674417556808787,
+    "testSize": 400,
+    "alphaGpt": "0,1",
+    "alphaClaude": "0,1",
+    "diffCount": 449,
+    "diffPct": 22.4,
+    "claudeNegDiff": 93,
+    "neutralMisclass": 49,
+    "neutralActual": 175,
+    "claudePosActual": 100,
+    "claudePosCorrect": 53,
+    "practicalDiffPct": 1.85,
+    "practicalThresholdPct": 5,
+    "neutralRecallRange": [
+      0.72,
+      0.61
+    ]
+  },
+  "distribution": {
+    "labels": [
+      "POSITIF",
+      "NEGATIF",
+      "NETRAL"
+    ],
+    "gpt": {
+      "positif": 269,
+      "negatif": 853,
+      "netral": 878
+    },
+    "claude": {
+      "positif": 501,
+      "negatif": 946,
+      "netral": 553
+    },
+    "gptArray": [
+      269,
+      853,
+      878
+    ],
+    "claudeArray": [
+      501,
+      946,
+      553
+    ],
+    "gptPct": {
+      "positif": 13.4,
+      "negatif": 42.6,
+      "netral": 43.9
+    },
+    "claudePct": {
+      "positif": 25.0,
+      "negatif": 47.3,
+      "netral": 27.6
+    }
+  },
+  "metrics": {
+    "labels": [
+      "Accuracy",
+      "Precision",
+      "Recall",
+      "F1-Score"
+    ],
+    "gpt": [
+      76.25,
+      74.48,
+      72.41,
+      73.03
+    ],
+    "claude": [
+      72.0,
+      71.3,
+      67.54,
+      68.57
+    ]
+  },
+  "cv": {
+    "labels": [
+      "Fold 1",
+      "Fold 2",
+      "Fold 3",
+      "Fold 4",
+      "Fold 5"
+    ],
+    "gpt": [
+      0.7225,
+      0.7225,
+      0.73,
+      0.705,
+      0.72
+    ],
+    "claude": [
+      0.6925,
+      0.715,
+      0.7175,
+      0.7,
+      0.6825
+    ],
+    "mean": {
+      "gpt": 0.72,
+      "claude": 0.7015
+    },
+    "sd": {
+      "gpt": 0.0082,
+      "claude": 0.0133
+    }
+  },
+  "confusion": {
+    "classes": [
+      "POSITIF",
+      "NEGATIF",
+      "NETRAL"
+    ],
+    "gpt": [
+      [
+        32,
+        15,
+        7
+      ],
+      [
+        7,
+        147,
+        17
+      ],
+      [
+        9,
+        40,
+        126
+      ]
+    ],
+    "claude": [
+      [
+        53,
+        22,
+        25
+      ],
+      [
+        7,
+        167,
+        15
+      ],
+      [
+        10,
+        33,
+        68
+      ]
+    ]
+  },
+  "perClass": {
+    "gpt": {
+      "precision": {
+        "positif": 0.67,
+        "negatif": 0.73,
+        "netral": 0.84
+      },
+      "recall": {
+        "positif": 0.59,
+        "negatif": 0.86,
+        "netral": 0.72
+      }
+    },
+    "claude": {
+      "precision": {
+        "positif": 0.76,
+        "negatif": 0.75,
+        "netral": 0.63
+      },
+      "recall": {
+        "positif": 0.53,
+        "negatif": 0.88,
+        "netral": 0.61
+      }
+    }
+  },
+  "words": {
+    "positif": [
+      {
+        "w": "mbg",
+        "s": 32
+      },
+      {
+        "w": "anak",
+        "s": 27
+      },
+      {
+        "w": "program",
+        "s": 27
+      },
+      {
+        "w": "berhasil",
+        "s": 26
+      },
+      {
+        "w": "makan",
+        "s": 26
+      },
+      {
+        "w": "gratis",
+        "s": 25
+      },
+      {
+        "w": "bergizi",
+        "s": 22
+      },
+      {
+        "w": "sekolah",
+        "s": 21
+      },
+      {
+        "w": "prabowo",
+        "s": 19
+      },
+      {
+        "w": "gizi",
+        "s": 17
+      },
+      {
+        "w": "indonesia",
+        "s": 17
+      },
+      {
+        "w": "99",
+        "s": 16
+      },
+      {
+        "w": "nyata",
+        "s": 16
+      },
+      {
+        "w": "sehat",
+        "s": 15
+      },
+      {
+        "w": "ekonomi",
+        "s": 15
+      },
+      {
+        "w": "siswa",
+        "s": 15
+      }
+    ],
+    "negatif": [
+      {
+        "w": "mbg",
+        "s": 32
+      },
+      {
+        "w": "makan",
+        "s": 24
+      },
+      {
+        "w": "gratis",
+        "s": 24
+      },
+      {
+        "w": "program",
+        "s": 22
+      },
+      {
+        "w": "anak",
+        "s": 21
+      },
+      {
+        "w": "gagal",
+        "s": 20
+      },
+      {
+        "w": "keracunan",
+        "s": 20
+      },
+      {
+        "w": "sekolah",
+        "s": 20
+      },
+      {
+        "w": "anggaran",
+        "s": 19
+      },
+      {
+        "w": "prabowo",
+        "s": 18
+      },
+      {
+        "w": "siswa",
+        "s": 18
+      },
+      {
+        "w": "korupsi",
+        "s": 17
+      },
+      {
+        "w": "tidak",
+        "s": 16
+      },
+      {
+        "w": "berhasil",
+        "s": 16
+      },
+      {
+        "w": "kebijakan",
+        "s": 15
+      },
+      {
+        "w": "ya",
+        "s": 15
+      }
+    ],
+    "netral": [
+      {
+        "w": "makan",
+        "s": 32
+      },
+      {
+        "w": "gratis",
+        "s": 32
+      },
+      {
+        "w": "mbg",
+        "s": 29
+      },
+      {
+        "w": "sekolah",
+        "s": 28
+      },
+      {
+        "w": "program",
+        "s": 27
+      },
+      {
+        "w": "prabowo",
+        "s": 25
+      },
+      {
+        "w": "anak",
+        "s": 21
+      },
+      {
+        "w": "bergizi",
+        "s": 20
+      },
+      {
+        "w": "rakyat",
+        "s": 19
+      },
+      {
+        "w": "siang",
+        "s": 19
+      },
+      {
+        "w": "anggaran",
+        "s": 18
+      },
+      {
+        "w": "siswa",
+        "s": 17
+      },
+      {
+        "w": "presiden",
+        "s": 16
+      },
+      {
+        "w": "berdaya",
+        "s": 15
+      },
+      {
+        "w": "koperasi",
+        "s": 15
+      },
+      {
+        "w": "budiman",
+        "s": 15
+      }
+    ]
+  }
+}
+</script>
+</body>
+</html>
